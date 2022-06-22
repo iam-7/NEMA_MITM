@@ -6,7 +6,6 @@ import sys
 import argparse
 from pyais import *
 
-
 class AIS_NMEA:
     def __init__(self, sentence):
         self.description = "AIS NMEA sentance handler"
