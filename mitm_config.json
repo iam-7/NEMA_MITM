@@ -1,0 +1,35 @@
+{
+    
+    "AIVDM" :
+    { 
+       "attributes" : [
+            {
+                "key" : "lat",
+                "value" : 50,
+                "incremental": true
+            },
+            {
+                "key" : "mmsi",
+                "value" : "7854",
+                "incremental": false
+            }
+        ]
+    },
+        
+        
+    "GPGGA" : {
+        "attributes" : [
+            {
+                "key" : "hdop",
+                "value" : "2",
+                "incremental": false
+            },
+            {
+                "key" : "lon",
+                "value": 100,
+                "incremental" : true
+            }
+        ]
+    }
+    
+}

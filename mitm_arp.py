@@ -7,19 +7,6 @@ import sys
 import argparse
 from pyais import *
 
-# class AIS_NMEA:
-#     def __init__(self, sentence):
-#         self.description = "AIS NMEA sentance handler"
-#         self.sentence = sentence
-#         self.decoded_dict = decode(sentence).asdict()
-#         self.ais_dict = decode(sentence).asdict()
-#         self.modified_sentence = encode_dict(self.ais_dict)
-
-#     def alter_field(self, field_name, field_value):
-#         self.ais_dict[field_name] = field_value
-#         self.modified_sentence = encode_dict(self.ais_dict, talker_id="AIVDM")
-
-
 class MITM:
     def __init__(self, target_ip,  src_ip, iface):
         self.target_ip = target_ip
@@ -29,8 +16,6 @@ class MITM:
         self.target_mac = None
         self.nfqueue = NetfilterQueue()
         self.pkt = None
-
-    #def payload_handle(self):
 
     def modify(self, packet):
         #self.arp_poison()

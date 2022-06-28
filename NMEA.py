@@ -2,62 +2,9 @@ from datetime import datetime, timezone
 from xml.sax.xmlreader import AttributesNSImpl
 import pynmea2
 from pyais import *
-
-class Attributes:
-    talker = "talker"
-
-    # GGA
-    time = "time"
-    lat = "lat"
-    lat_dir = "lat_dir"
-    lon = "lon"
-    lon_dir = "lon_dir"
-    gps_qual = "gps_qual"
-    num_sats = "num_sats"
-    hdop = "horizontal_dil"
-    altitude = "altitude"
-    altitude_units = "altitude_units"
-    geo_sep = "geo_sep"
-    geo_sep_units = "geo_sep_units"
-    gps_diff_age = "gps_diff_age"
-    ref_station_id = "ref_station_id"
-
-    # GSA
-    mode = "mode"
-    mode_fix = "mode_fix"
-    sv_id01 = "sv_id01"
-    sv_id02 = "sv_id02"
-    sv_id03 = "sv_id03"
-    sv_id04 = "sv_id04"
-    sv_id05 = "sv_id05"
-    sv_id06 = "sv_id06"
-    sv_id07 = "sv_id07"
-    sv_id08 = "sv_id08"
-    sv_id09 = "sv_id09"
-    sv_id10 = "sv_id10"
-    sv_id11 = "sv_id11"
-    sv_id12 = "sv_id12"
-    pdop = "pdop"
-    vdop = "vdop"
-
-    # RMC
-    status = "status"
-    spd_over_grnd = "spd_over_grnd"
-    true_course = "true_course"
-    date = "date"
-    mag_variation = "mag_variation"
-    mag_variation_dir = "mag_variation_dir"
+from Attributes import attributes
 
 class NMEA():
-
-    GPS_ATTR = {
-        "GGA" : [Attributes.time, Attributes.lat, Attributes.lat_dir, Attributes.lon, Attributes.lon_dir, Attributes.gps_qual, Attributes.num_sats
-        , Attributes.hdop, Attributes.altitude, Attributes.altitude_units, Attributes.geo_sep, Attributes.geo_sep_units, Attributes.gps_diff_age, Attributes.ref_station_id],
-
-        "GSA" : [ Attributes.mode, Attributes.mode_fix, Attributes.sv_id01, Attributes.sv_id02, Attributes.sv_id03, Attributes.sv_id04, Attributes.sv_id05, Attributes.sv_id06, Attributes.sv_id07, Attributes.sv_id08, Attributes.sv_id09, Attributes.sv_id10, Attributes.sv_id11, Attributes.sv_id12, Attributes.pdop, Attributes.hdop, Attributes.vdop],
-
-        "RMC" : [Attributes.time, Attributes.status, Attributes.lat, Attributes.lat_dir, Attributes.lon, Attributes.lon_dir, Attributes.spd_over_grnd, Attributes.true_course, Attributes.date, Attributes.mag_variation, Attributes.mag_variation_dir]
-    }
 
     def __init__(self, sentence = None, data = None, talker = None, sentence_type = None):
         self.sentence = sentence
@@ -67,19 +14,32 @@ class NMEA():
         self.sentence_type = sentence_type
 
     def decode(self):
-        payload = pynmea2.parse(self.sentence)
-        self.payload_data = vars(payload)
-        self.talker = self.payload_data['talker']
-        self.sentence_type = self.payload_data['sentence_type']
-        
+
         self.data = dict()
 
-        for key, value in zip(NMEA.GPS_ATTR[self.sentence_type], self.payload_data['data']):
-            self.data[key] = value
+        if self.sentence.startswith('!AIVDM') or self.sentence.startswith('!AIVDO'):
+            self.talker = self.sentence.split(',')[0][1:]
+            self.sentence_type = 'AIS'
+            self.data = decode(self.sentence).asdict()
+        else:
+            payload = pynmea2.parse(self.sentence)
+            self.payload_data = vars(payload)
+            
+            self.talker = self.payload_data['talker']
+            self.sentence_type = self.payload_data['sentence_type']
+            
+            # print(self.sentence_type)
+            # print(attributes[self.sentence_type])
+
+            for key, value in zip(attributes[self.sentence_type], self.payload_data['data']):
+                self.data[key] = value
         
     
     def encode(self):
-        if self.sentence_type == 'GGA':
+        if self.sentence_type == 'AIS':
+            self.sentence = encode_dict(self.data, talker_id=self.talker)[0]
+
+        elif self.sentence_type == 'GGA':
             self.sentence = pynmea2.GGA(self.talker, self.sentence_type, (self.data.values()))
         
         elif self.sentence_type == 'GSA':
@@ -87,7 +47,43 @@ class NMEA():
 
         elif self.sentence_type == 'RMC':
             self.sentence = pynmea2.RMC(self.talker, self.sentence_type, (self.data.values()))
-    
+        
+        elif self.sentence_type == 'VHW':
+            self.sentence = pynmea2.VHW(self.talker, self.sentence_type, (self.data.values()))
+        
+        elif self.sentence_type == 'VTG':
+            self.sentence = pynmea2.VTG(self.talker, self.sentence_type, (self.data.values()))
+        
+        elif self.sentence_type == 'HDT':
+            self.sentence = pynmea2.HDT(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'GLL':
+            self.sentence = pynmea2.GLL(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'ZDA':
+            self.sentence = pynmea2.ZDA(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'MWD':
+            self.sentence = pynmea2.MWD(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'MWV':
+            self.sentence = pynmea2.MWV(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'MTW':
+            self.data = pynmea2.MTW(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'DPT':
+            self.sentence = pynmea2.DPT(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'DBT':
+            self.sentence = pynmea2.DBT(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'DBS':
+            self.sentence = pynmea2.DBS(self.talker, self.sentence_type, (self.data.values()))
+
+        elif self.sentence_type == 'RPM':
+            self.sentence = pynmea2.RPM(self.talker, self.sentence_type, (self.data.values()))
+
     def modify_attr(self, key, value):
         if key not in self.data:
             print(f"[-] Key '{key}' does not exist in '{self.sentence_type}', Please check supported attributes for the sentence type")
@@ -161,7 +157,6 @@ class NMEA_GGA:
             self.chksum = payload_data[15].strip("*")
             
         
-
 if __name__ == '__main__':
 
     data = b"!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23"
