@@ -33,6 +33,10 @@ data_set = [
 # "$IIRPM,E,2,0,10.5,A*7F"
 ]
 
+data = b'12'
+print(len(data))
+exit()
+
 targets = list(config_data.keys())
 
 for data in data_set:
@@ -53,7 +57,4 @@ for data in data_set:
                 nmea_obj.modify_attr(item['key'], item['value'])
         
         print(nmea_obj.sentence)
-        print()
-    
--35.048138945865524, 138.48502593582194
--35.02247983508788, 139.50322802408039
+        print(type(str(nmea_obj.sentence)))

@@ -40,7 +40,7 @@ class NMEA():
             self.sentence = encode_dict(self.data, talker_id=self.talker)[0]
 
         elif self.sentence_type == 'GGA':
-            self.sentence = pynmea2.GGA(self.talker, self.sentence_type, (self.data.values()))
+            self.sentence = str(pynmea2.GGA(self.talker, self.sentence_type, (self.data.values())))
         
         elif self.sentence_type == 'GSA':
             self.sentence = pynmea2.GSA(self.talker, self.sentence_type, (self.data.values()))
@@ -184,14 +184,14 @@ if __name__ == '__main__':
     # nmeagga.encode()
     # print(nmeagga.sentence)
 
-    # data_set = ["$GPGGA,083122.540,3705.414,N,07514.063,W,1,12,1.0,0.0,M,0.0,M,,*75",
-    # "$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30"
-    # ,"$GPRMC,083122.540,A,3705.414,N,07514.063,W,139839.8,100.1,180622,000.0,W*5F"]
-    # for sentence in data_set:
-    #     nmea = NMEA(sentence = sentence)
-    #     nmea.decode()
-    #     print(nmea.data)
-    #     print()
+    data_set = ["$GPGGA,083122.540,3705.414,N,07514.063,W,1,12,1.0,0.0,M,0.0,M,,*75",
+    "$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30"
+    ,"$GPRMC,083122.540,A,3705.414,N,07514.063,W,139839.8,100.1,180622,000.0,W*5F"]
+    for sentence in data_set:
+        nmea = NMEA(sentence = sentence)
+        nmea.decode()
+        print(nmea.data)
+        print()
     #     #nmea.modify_attr(Attributes.altitude, '10.0')
     #     #nmea.encode()
     #     print(nmea.sentence)

