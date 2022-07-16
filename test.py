@@ -33,9 +33,12 @@ data_set = [
 # "$IIRPM,E,2,0,10.5,A*7F"
 ]
 
-data = b'12'
+data = '!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23'
 print(len(data))
-exit()
+
+nmea = NMEA(sentence= data)
+nmea.decode()
+pprint(nmea.data)
 
 targets = list(config_data.keys())
 
@@ -58,3 +61,22 @@ for data in data_set:
         
         print(nmea_obj.sentence)
         print(type(str(nmea_obj.sentence)))
+
+{
+    'accuracy': False,
+    'course': 36.7,
+    'heading': 511,
+    'lat': 49.475577,
+    'lon': 0.13138,
+    'maneuver': 0,
+    'mmsi': 227006760,
+    'msg_type': 1,
+    'radio': 22136,
+    'raim': False,
+    'repeat': 0,
+    'second': 14,
+    'spare_1': b'\x00',
+    'speed': 0.0,
+    'status': <NavigationStatus.UnderWayUsingEngine: 0>,
+    'turn': None
+ }
