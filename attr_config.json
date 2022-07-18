@@ -1,0 +1,21 @@
+{
+    "attributes" : 
+        [
+            {
+                "key" : "lat",
+                "value" : 100,
+                "incremental": true
+            },
+            {
+                "key" : "spd_over_grnd",
+                "value" : "10",
+                "incremental": false
+            },
+            {
+                "key": "heading",
+                "value" : "20",
+                "incremental" : false
+            }
+
+        ]
+}
