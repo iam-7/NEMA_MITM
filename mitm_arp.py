@@ -89,9 +89,9 @@ class MITM:
 def get_input():
     parser = argparse.ArgumentParser(description="NEMA MITM Tool")
     parser.add_argument(
-        "-t", "--target-ip", help="Target system IP address (Eg: ECDIS)", required=True)
+        "-t", "--target-ip", help="Target system IP address (eg: ECDIS)", required=True)
     parser.add_argument("-s", "--source-ip",
-                        help="Source system IP address", required=True)
+                        help="Source system IP address (eg: Serial/IP Converter)", required=True)
     parser.add_argument("-i", "--interface",
                         help="Interface name", required=True)
 
