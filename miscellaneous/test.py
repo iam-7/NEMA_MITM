@@ -62,21 +62,3 @@ for data in data_set:
         print(nmea_obj.sentence)
         print(type(str(nmea_obj.sentence)))
 
-{
-    'accuracy': False,
-    'course': 36.7,
-    'heading': 511,
-    'lat': 49.475577,
-    'lon': 0.13138,
-    'maneuver': 0,
-    'mmsi': 227006760,
-    'msg_type': 1,
-    'radio': 22136,
-    'raim': False,
-    'repeat': 0,
-    'second': 14,
-    'spare_1': b'\x00',
-    'speed': 0.0,
-    'status': <NavigationStatus.UnderWayUsingEngine: 0>,
-    'turn': None
- }
