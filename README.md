@@ -8,18 +8,23 @@ This scripts are tested in Ubuntu Machiene running ***Python 3.9.7*** with simul
 
 To use the scriprs, install the modules in the ***requirements.txt***
 
-> pip3 install requirements.txt
-
+```
+pip3 install requirements.txt
+```
 
 ## Attack Modes
 
 Script contains 4 attack options, run ***-h*** for help.
 
-> python3 nmea_attacks.py -h
+```
+python3 nmea_attacks.py -h
+```
 
 Before running the ***nmea_attacks.py***, need to run ***mitm_arp.py*** to start ARP poisoining to intercept traffic, Requires root privileges
 
-> sudo python3 mitm_arp.py -t TARGET_IP -s SOURCE_IP -i INTERFACE_NAME
+```
+sudo python3 mitm_arp.py -t TARGET_IP -s SOURCE_IP -i INTERFACE_NAME
+```
 
 #### S - Sniffing Attack
 
