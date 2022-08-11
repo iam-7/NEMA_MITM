@@ -10,7 +10,7 @@ data_set = [
 # "$GPVTG,15.0,T,15.0,M,5.0,N,9.3,K*41",
 # "$IIHDT,15.0,T*16",
 # "$GPGLL,3500.0,S,13830.0,E,090919.634,A*2F",
-"$GPGGA,090919.634,3500.0,S,13830.0,E,1,4,1.5,2.0,M,,,,*26",
+#"$GPGGA,090919.634,3500.0,S,13830.0,E,1,4,1.5,2.0,M,,,,*26",
 # "$GPGSA,A,3,8,11,15,22,,,,,,,,,1.5,1.5,1.5*0A",
 # "$GPZDA,090919.634,22,06,2022,-04,00*72",
 # "!AIVDO,1,1,,A,17PaewhP0jar0;1cv@h0UPNV0000,0*5A",
@@ -39,26 +39,27 @@ print(len(data))
 nmea = NMEA(sentence= data)
 nmea.decode()
 pprint(nmea.data)
+nmea.modify_attr('lat', 10)
+pprint(nmea.data)
+# targets = list(config_data.keys())
 
-targets = list(config_data.keys())
-
-for data in data_set:
+# for data in data_set:
     
-    sentence_type = data.split(",")[0][1:]
-    if sentence_type in targets:
-        nmea_obj = NMEA(sentence = data)
-        nmea_obj.decode()
-        # pprint(nmea_obj.data)
-        print(nmea_obj.sentence)
+#     sentence_type = data.split(",")[0][1:]
+#     if sentence_type in targets:
+#         nmea_obj = NMEA(sentence = data)
+#         nmea_obj.decode()
+#         # pprint(nmea_obj.data)
+#         print(nmea_obj.sentence)
         
-        for item in list(config_data[sentence_type]['attributes']):
-            if item['incremental']:
-                print(type(nmea_obj.data[item['key']]))
-                nmea_obj.modify_attr(item['key'], str(float(nmea_obj.data[item['key']]) + item['value']))
+#         for item in list(config_data[sentence_type]['attributes']):
+#             if item['incremental']:
+#                 print(type(nmea_obj.data[item['key']]))
+#                 nmea_obj.modify_attr(item['key'], str(float(nmea_obj.data[item['key']]) + item['value']))
             
-            else:
-                nmea_obj.modify_attr(item['key'], item['value'])
+#             else:
+#                 nmea_obj.modify_attr(item['key'], item['value'])
         
-        print(nmea_obj.sentence)
-        print(type(str(nmea_obj.sentence)))
+#         print(nmea_obj.sentence)
+#         print(type(str(nmea_obj.sentence)))
 

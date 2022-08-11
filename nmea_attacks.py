@@ -120,7 +120,6 @@ class MITM:
             packet.accept()
 
     def modify(self, packet):
-        print("[*] Running Sentence Modification Attack")
         pkt = packet.get_payload()
         pktIP = IP(pkt)
         
@@ -166,7 +165,7 @@ class MITM:
         packet.accept()
 
     def stealth(self, packet):
-        print("[*] Running Attribute Attack")
+        
         pkt = packet.get_payload()
         pktIP = IP(pkt)
         
@@ -219,8 +218,10 @@ class MITM:
         #print(self.option)
         if self.option == "M":
             self.nfqueue.bind(0, self.modify)
+            print("[*] Running in Sentence Modification mode")
         elif self.option == "A":
             self.nfqueue.bind(0, self.stealth)
+            print("[*] Running in Attriute modification mode")
         elif self.option == "S":
             self.nfqueue.bind(0, self.sniff)
             print("[*] Running in Sniff mode")
