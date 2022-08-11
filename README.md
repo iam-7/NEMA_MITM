@@ -108,9 +108,9 @@ sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o D
 
 Use AIS as covert communication channel between attacker machine and attacker controlled node onboard the vessel. For detailed explation please refer
 
-```
-Ahmed Amro, Vasileios Gkioulos, "From Click To Sink: Utilizing AIS for command and control in maritime cyber attacks", 27th European Symposium on Research in Computer Security (ESORICS) 2022.
-```
+
+> Ahmed Amro, Vasileios Gkioulos, "From Click To Sink: Utilizing AIS for command and control in maritime cyber attacks", 27th European Symposium on Research > in Computer Security (ESORICS) 2022.
+
 #### NOTE: 
 
 #### Generate Payloads
