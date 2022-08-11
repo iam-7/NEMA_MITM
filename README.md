@@ -25,14 +25,17 @@ Before running the ***nmea_attacks.py***, need to run ***mitm_arp.py*** to start
 
 Sniff all NMEA 0183 data in communication between targets.
 
-> sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o S
-
+```
+sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o S
+```
 
 #### M - Modification Attack
 
 Modify NMEA sentence data fields based on json configuration file.
 
-> sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o M -c CONFIG_FILE.json
+```
+sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o M -c CONFIG_FILE.json
+```
 
 For sample configuration refer ***mitm_config.json***
 
@@ -58,7 +61,9 @@ if incremental is ```true```, then specify value as ```integer or float``` (with
 
 To target specific data fileds across all intercepted sentences if exists (eg. lat/lon).
 
-> sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o A -c CONFIG_FILE.json
+```
+sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o A -c CONFIG_FILE.json
+```
 
 Refer ***attr_config.json*** for example
 
@@ -90,7 +95,9 @@ Refer ***attr_config.json*** for example
 
 Actively drop all NMEA 0183 data in transit
 
-> sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o D
+```
+sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o D
+```
 
 ## AIS Command & Control
 
@@ -107,14 +114,20 @@ To create AIS sentences with attacker payload use ***ais_cc.py**
 
 For file payloads
 
-> python3 ais_cc.py -f FILE_NAME
+```
+python3 ais_cc.py -f FILE_NAME
+```
 
 For commands
 
-> python3 ais_cc.py -c "CMD"
+```
+python3 ais_cc.py -c "CMD"
+```
 
 #### Command & Control Execution
 
 Attack option ***-o C*** in ***nmea_attacks.py*** demonstrates attack node executing payloads in AIS senetences.
 
-> sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o C
+```
+sudo python3 nmea_attacks.py -t TARGET_IP -s SOURCE_IP -o C
+```
